@@ -1,0 +1,123 @@
+#Load Libraries
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+
+#Step 1 - Data Collection
+df = pd.read_csv(r"filepath\insurance.csv")
+
+#Step 2 - Data Cleaning
+age_raw = df["age"].tolist()
+price_raw = df["charges"].tolist()
+age_input = np.array(age_raw)
+price_output = np.array(price_raw)
+
+#Plotting the graph
+%matplotlib inline
+plt.scatter(age_input, price_output, marker = "+")
+plt.xlabel('Age')
+plt.ylabel('Insurance Premium')
+plt.show()
+
+#Step 3 - Training the Model
+
+#Defining the cost function
+def compute_cost(age_input, price_output, params):
+    m = len(age_input)
+    cost_sum = 0.0
+    for x, y in zip(age_input, price_output):
+        y_hat = np.dot(params, np.array([1.0, x]))
+        cost_sum += (y_hat - y) ** 2
+    
+    cost = cost_sum / (m * 2)
+    return cost
+    
+#Batch Gradient Descent and Simultaneous Update
+def lin_reg_batch(age_input, price_output, params, alpha, max_iterations):
+    iteration = 0
+    m = len(age_input)
+    cost = np.zeros(max_iterations)
+    params_store = np.zeros([2, max_iterations])
+    
+    while iteration < max_iterations:
+        cost[iteration] = compute_cost(age_input, price_output, params)
+        params_store[:, iteration] = params
+        
+        print('============================')
+        print(f'Iteration #: {iteration}')
+        print(f'Cost: {cost[iteration]}')
+        
+        for x, y in zip(age_input, price_output):
+            y_hat = np.dot(params, np.array([1.0, x]))
+            gradient = np.array([1.0, x]) * (y_hat - y)
+            params = params - alpha * (gradient / m)
+            
+            #Alternatively:
+            #gradient = np.array([1.0, x]) * (y - y_hat)
+            #params += alpha * (gradient / m)
+        
+        iteration += 1
+    
+    return params, cost, params_store
+
+#Importing SK Learn (80% for training, 20% for testing)
+from sklearn.model_selection import train_test_split
+x_train, x_test, y_train, y_test = train_test_split(age_input, price_output, test_size = 0.20)
+
+#Running the algorithm for Batch Gradient Descent
+params_batch = np.array([20.0, 80.0])
+alpha_batch = 1e-3
+max_iterations = 1000
+params_hat_batch, cost_batch, params_store_batch =\
+lin_reg_batch(x_train, y_train, params_batch, alpha_batch, max_iterations)
+
+#Stochastic Gradient Descent and Simultaneous Update
+def lin_reg_stoch(age_input, price_output, params, alpha):
+    m = len(age_input)
+    cost = np.zeros(m)
+    params_store = np.zeros([2, m])
+    
+    iteration = 0
+    for x, y in zip(age_input, price_output):
+        cost[iteration] = compute_cost(age_input, price_output, params)
+        params_store[:, iteration] = params
+        
+        print('============================')
+        print(f'Iteration #: {iteration}')
+        print(f'Cost: {cost[iteration]}')
+        
+        y_hat = np.dot(params, np.array([1.0, x]))
+        gradient = np.array([1.0, x]) * (y_hat - y)
+        params = params - alpha * (gradient / m)
+        
+        #gradient = np.array([1.0, x]) * (y - y_hat)
+        #params += alpha * (gradient / m)
+        
+        iteration += 1
+    
+    return params, cost, params_store
+
+#Running the algorithm for Stoch Gradient Descent
+alpha_stoch = 1e-3
+params_stoch = np.array([20.0, 80.0])
+params_hat_stoch, cost, params_store =\
+    lin_reg_stoch(x_train, y_train, params_stoch, alpha_stoch)
+
+#Plotting the results - This compares the difference between batch and stochastic Gradient Descent
+plt.scatter(age_input, price_output, marker = "+")
+plt.plot(age_input, params_hat_batch[0] + params_hat_batch[1]*age_input, 'r', label = 'Line of Best Fit (Batch Gradient Descent)')
+plt.plot(age_input, params_hat_stoch[0] + params_hat_stoch[1]*age_input, 'g', label = 'Line of Best Fit (Stochastic Gradient Descent)')
+plt.xlabel('Age')
+plt.ylabel('Insurance Premium')
+plt.legend()
+plt.show
+
+print(f'Batch Theta 0 (Intercept): {params_hat_batch[0]}') 
+print(f'Batch Theta 1 (Slope): {params_hat_batch[1]}')
+print(f'Stoch Theta 0 (Intercept): {params_hat_stoch[0]}') 
+print(f'Stoch Theta 1 (Slope): {params_hat_stoch[1]}')
+
+rms_batch = np.sqrt(np.mean(np.square(params_hat_batch[0] + params_hat_batch[1]*age_input - price_output)))
+rms_stoch = np.sqrt(np.mean(np.square(params_hat_stoch[0] + params_hat_stoch[1]*age_input - price_output)))
+print(f'Batch Root Mean Square: {rms_stoch}')
+print(f'Stoch Root Mean Square: {rms_batch}')

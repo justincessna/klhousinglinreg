@@ -46,6 +46,7 @@ def lin_reg_batch(age_input, price_output, params, alpha, max_iterations):
         print('============================')
         print(f'Iteration #: {iteration}')
         print(f'Cost: {cost[iteration]}')
+        print(f'Params: {params}')
         
         for x, y in zip(age_input, price_output):
             y_hat = np.dot(params, np.array([1.0, x]))
@@ -85,6 +86,7 @@ def lin_reg_stoch(age_input, price_output, params, alpha):
         print('============================')
         print(f'Iteration #: {iteration}')
         print(f'Cost: {cost[iteration]}')
+        print(f'Params: {params}')
         
         y_hat = np.dot(params, np.array([1.0, x]))
         gradient = np.array([1.0, x]) * (y_hat - y)

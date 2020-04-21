@@ -1,0 +1,91 @@
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
+
+#Step 1 - Data Collection
+df = pd.read_csv(r"filepath\insurance_data.csv")
+
+#Step 2 - Data Cleaning
+age_raw = df["age"].tolist()
+bmi_raw = df["bmi"].tolist()
+price_raw = df["charges"].tolist()
+age_input_raw = np.array(age_raw)
+bmi_input_raw = np.array(bmi_raw)
+
+#Feature Scaling
+age_input = age_input_raw/64
+bmi_input = bmi_input_raw/53
+price_output = np.array(price_raw)
+
+#Plotting the graph
+%matplotlib inline
+fig = plt.figure()
+ax = fig.add_subplot(111, projection='3d')
+ax.scatter3D(age_input, bmi_input, price_output, marker = ".")
+ax.set_xlabel('Age (Scaled)')
+ax.set_ylabel('BMI (Scaled)')
+ax.set_zlabel('Insurance Premium')
+plt.show()
+
+#Defining the cost function
+def compute_cost(age_input, bmi_input, price_output, params):
+    m = len(age_input)
+    cost_sum = 0.0
+    for x, y, z in zip(age_input, bmi_input, price_output):
+        y_hat = np.dot(params, np.array([1.0, x, y]))
+        cost_sum += (y_hat - z) ** 2
+    
+    cost = cost_sum / (m * 2)
+    return cost
+
+#Gradient Descent
+def mult_lin_reg(age_input, bmi_input, price_output, params, alpha, max_iterations):
+    iteration = 0
+    m = len(age_input)
+    cost = np.zeros(max_iterations)
+    params_store = np.zeros([3, max_iterations])
+    
+    while iteration < max_iterations:
+        cost[iteration] = compute_cost(age_input, bmi_input, price_output, params)
+        params_store[:, iteration] = params
+        
+        print('=========================')
+        print(f'Iteration #: {iteration}')
+        print(f'Cost: {cost[iteration]}')
+        print(f'params: {params}')
+        
+        for x, y, z in zip(age_input, bmi_input, price_output):
+            y_hat = np.dot(params, np.array([1.0, x, y]))
+            gradient = np.array([1.0, x, y]) * (y_hat - z)
+            params = params - alpha * (gradient / m)
+        
+        iteration += 1
+    
+    return params, cost, params_store
+
+#Step 3 - Training the model using scikitlearn
+from sklearn.model_selection import train_test_split
+x_train, x_test, y_train, y_test, z_train, z_test = train_test_split(age_input, bmi_input, price_output, test_size = 0.20)
+
+#Running the algorithm
+params_batch = np.array([20.0, 50.0, 80.0])
+alpha_batch = 1e-3
+max_iterations = 1000
+params_hat_batch, cost_batch, params_store_batch =\
+mult_lin_reg(x_train, y_train, z_train, params_batch, alpha_batch, max_iterations)
+
+#Plotting the results
+fig = plt.figure()
+ax = fig.add_subplot(111, projection='3d')
+ax.scatter3D(age_input_raw, bmi_input_raw, price_output, marker = ".")
+ax.plot_trisurf(age_input_raw, bmi_input_raw, age_input * params_hat_batch[1] + bmi_input * params_hat_batch[2] + params_hat_batch[0], alpha = 0.5)
+ax.set_xlabel('Age')
+ax.set_ylabel('BMI')
+ax.set_zlabel('Insurance Premium')
+# *0.01 because earlier I scaled by the 100th
+print(f'Theta 0 (Intercept): {params_hat_batch[0] * 0.01}') 
+print(f'Theta 1 (Coefficient 1 - Age): {params_hat_batch[1] * 0.01}')
+print(f'Theta 2 (Coefficient 2 - BMI): {params_hat_batch[2] * 0.01}')
+rms = np.sqrt(np.mean(np.square(params_hat_batch[0] + params_hat_batch[1]*age_input + params_hat_batch[2]*bmi_input - price_output)))
+print(f'Root Mean Square: {rms}')
